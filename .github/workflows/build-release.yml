@@ -1,0 +1,65 @@
+name: Build & Release EXE
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller pillow requests customtkinter pystray plyer yt-dlp
+
+      - name: Generate default icon (if no icon.ico exists)
+        run: python build_icon.py
+        shell: pwsh
+
+      - name: Build EXE with PyInstaller
+        run: |
+          pyinstaller `
+            --onefile `
+            --windowed `
+            --icon=icon.ico `
+            --name=FetchPro `
+            --add-data="icon.ico;." `
+            fetchpro.py
+        shell: pwsh
+
+      - name: Upload EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FetchPro-${{ github.ref_name }}
+          path: dist/FetchPro.exe
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: FetchPro ${{ github.ref_name }}
+          body: |
+            ## FetchPro ${{ github.ref_name }}
+
+            ### הורדה
+            הורד את קובץ ה-EXE מהרשימה למטה והפעל ישירות – אין צורך בהתקנה.
+
+            ### שינויים
+            ראה [CHANGELOG](CHANGELOG.md) לפרטים נוספים.
+          files: dist/FetchPro.exe
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
