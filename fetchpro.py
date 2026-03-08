@@ -599,6 +599,7 @@ class Settings:
     ytdlp_embed_thumbnail: bool = True      # embed thumbnail in audio files
     ytdlp_add_metadata:    bool = True      # write title/artist tags
     virustotal_api_key:    str  = ""        # optional VT key for hash scanning
+    virustotal_enabled:    bool = True      # enable/disable VT scanning
     disk_check_enabled:    bool = True      # warn if not enough disk space
     watchdog_timeout_min:  int  = 5         # restart stuck downloads after N minutes
     stats_enabled:         bool = True
@@ -2028,6 +2029,8 @@ def _virustotal_scan(item: DownloadItem, on_progress: Callable,
     Returns True = clean / unknown, False = threat detected (file quarantined).
     Requires settings.virustotal_api_key to be set.
     """
+    if not settings.virustotal_enabled:
+        return True   # scanning disabled by user
     api_key = settings.virustotal_api_key.strip()
     if not api_key or not item.destination.exists():
         return True   # no key → skip scan, treat as clean
@@ -2193,7 +2196,7 @@ def _post_process(
         on_progress(item)
 
     # VirusTotal scan
-    if settings.virustotal_api_key.strip() and item.destination.exists():
+    if settings.virustotal_enabled and settings.virustotal_api_key.strip() and item.destination.exists():
         clean = _virustotal_scan(item, on_progress, settings)
         if not clean:
             return   # file quarantined — stop here
@@ -2926,6 +2929,7 @@ class SettingsDialog(tk.Toplevel):
 
         # ── VirusTotal ─────────────────────────────────────────────────
         _section("🛡 VirusTotal — סריקת וירוסים")
+        _check("הפעל סריקת VirusTotal לאחר הורדה", "virustotal_enabled")
         tk.Label(body,
                  text=_t("vt_free_key"),
                  bg=T.BG_DEEP, fg=T.TEXT_MUTED, font=("Consolas",8), padx=24
