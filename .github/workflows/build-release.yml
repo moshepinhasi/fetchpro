@@ -26,7 +26,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyinstaller pillow requests customtkinter pystray plyer yt-dlp
 
-      - name: Generate default icon (if no icon.ico exists)
+      - name: Resolve icon (custom icon.ico / icon.png / any PNG, or generate default)
         run: python build_icon.py
         shell: pwsh
 
@@ -39,6 +39,17 @@ jobs:
             --name=FetchPro `
             --add-data="icon.ico;." `
             fetchpro.py
+        shell: pwsh
+
+      - name: Verify built files
+        run: |
+          if (!(Test-Path "dist\FetchPro.exe")) { throw "EXE not found!" }
+          Write-Host "EXE size: $((Get-Item 'dist\FetchPro.exe').Length) bytes"
+          if (Test-Path "FetchPro-Extension-v*.zip") {
+            Write-Host "Extension ZIP found."
+          } else {
+            Write-Host "WARNING: No extension ZIP found in repo root."
+          }
         shell: pwsh
 
       - name: Upload EXE artifact
@@ -56,10 +67,13 @@ jobs:
             ## FetchPro ${{ github.ref_name }}
 
             ### הורדה
-            הורד את קובץ ה-EXE מהרשימה למטה והפעל ישירות – אין צורך בהתקנה.
+            - **FetchPro.exe** – הפעל ישירות, אין צורך בהתקנה.
+            - **FetchPro-Extension-v1.3.zip** – תוסף Chrome: פתח את `chrome://extensions`, הפעל "Developer mode" וגרור את הקובץ לדף.
 
             ### שינויים
             ראה [CHANGELOG](CHANGELOG.md) לפרטים נוספים.
-          files: dist/FetchPro.exe
+          files: |
+            dist/FetchPro.exe
+            FetchPro-Extension-*.zip
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}

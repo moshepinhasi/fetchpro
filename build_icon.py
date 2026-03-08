@@ -103,10 +103,20 @@ def main() -> None:
         print(f"[build_icon] Found existing {ICON_PATH} – using it as-is.")
         return
 
+    # First: look for icon.png / icon.jpg next to this script
     for ext in ("png", "jpg", "jpeg"):
         candidate = Path(f"icon.{ext}")
         if candidate.exists():
             _convert_image_to_ico(candidate)
+            return
+
+    # Second: pick ANY PNG/JPG in the project root (user-supplied custom icon)
+    for ext in ("png", "jpg", "jpeg"):
+        matches = sorted(Path(".").glob(f"*.{ext}"))
+        if matches:
+            chosen = matches[0]
+            print(f"[build_icon] Using found image as icon: {chosen}")
+            _convert_image_to_ico(chosen)
             return
 
     print("[build_icon] No icon file found – generating default icon.")
