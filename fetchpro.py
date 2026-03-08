@@ -580,7 +580,7 @@ class Settings:
     torrent_max_dl_kbps:   int  = 0       # 0 = unlimited
     torrent_max_ul_kbps:   int  = 50      # upload limit (KB/s); 0 = unlimited
     torrent_seeding:       bool = False   # continue seeding after download completes
-    torrent_seed_ratio:    float = 1.0    # stop seeding at this share ratio
+    torrent_seed_ratio:    int   = 1      # stop seeding at this share ratio (integer multiplier)
     # v5.5 additions
     proxy_enabled:         bool = False
     proxy_type:            str  = "http"  # "http" | "socks5"
@@ -2825,74 +2825,6 @@ class SettingsDialog(tk.Toplevel):
 
         # ── Content ──
 
-        # ── 🚀 Startup — at top for easy access ─────────────────────
-        _section(_t("sec_startup"))
-        if platform.system() == "Windows":
-            _startup_actual = _is_windows_startup_enabled()
-            self._s.startup_with_windows = _startup_actual
-            startup_var_top = tk.BooleanVar(value=_startup_actual)
-
-            def _toggle_startup_top() -> None:
-                enable = startup_var_top.get()
-                self._s.startup_with_windows = enable
-                ok, msg = _set_windows_startup(enable)
-                if not ok:
-                    messagebox.showerror("שגיאה", msg, parent=self)
-                    startup_var_top.set(not enable)
-                    self._s.startup_with_windows = not enable
-                else:
-                    startup_status_lbl.configure(
-                        text=_t("startup_enabled") if enable else _t("startup_disabled"),
-                        fg=T.GREEN if enable else T.RED)
-
-            chk_top_row = tk.Frame(body, bg=T.BG_DEEP)
-            chk_top_row.pack(fill="x", padx=24, pady=(2, 0))
-            tk.Checkbutton(chk_top_row, text=_t("startup_win"),
-                           variable=startup_var_top, command=_toggle_startup_top,
-                           bg=T.BG_DEEP, fg=T.TEXT_MAIN, selectcolor=T.BG_CARD,
-                           activebackground=T.BG_DEEP, font=("Consolas", 10),
-                           cursor="hand2").pack(side="left")
-            startup_status_lbl = tk.Label(
-                chk_top_row,
-                text=_t("startup_enabled") if _startup_actual else _t("startup_disabled"),
-                fg=T.GREEN if _startup_actual else T.RED,
-                bg=T.BG_DEEP, font=("Consolas", 9))
-            startup_status_lbl.pack(side="left", padx=8)
-        else:
-            tk.Label(body, text=_t("startup_win_na"),
-                     bg=T.BG_DEEP, fg=T.TEXT_MUTED, font=("Consolas", 9),
-                     padx=24).pack(anchor="w")
-
-        # ── 🌍 Language — at top for easy access ─────────────────────
-        _section(_t("sec_language"))
-        lang_top_row = tk.Frame(body, bg=T.BG_DEEP)
-        lang_top_row.pack(fill="x", padx=24, pady=4)
-        tk.Label(lang_top_row, text=_t("language_label"),
-                 bg=T.BG_DEEP, fg=T.TEXT_DIM, font=("Consolas", 9),
-                 width=22, anchor="w").pack(side="left")
-        lang_var_top = tk.StringVar(value=self._s.language)
-        lang_combo_top = ttk.Combobox(
-            lang_top_row, textvariable=lang_var_top,
-            values=[f"{code}  —  {name}" for code, name in SUPPORTED_LANGS.items()],
-            state="readonly", width=26)
-        lang_combo_top.pack(side="left")
-        for i, (code, _) in enumerate(SUPPORTED_LANGS.items()):
-            if code == self._s.language:
-                lang_combo_top.current(i)
-                break
-
-        def _on_lang_top(*_) -> None:
-            val = lang_var_top.get().split("  ")[0].strip()
-            if val in SUPPORTED_LANGS:
-                global _LANG
-                _LANG = val
-                self._s.language = val
-
-        lang_combo_top.bind("<<ComboboxSelected>>", _on_lang_top)
-        tk.Label(body, text=_t("lang_restart_warn"),
-                 bg=T.BG_DEEP, fg=T.YELLOW, font=("Consolas", 8),
-                 padx=24).pack(anchor="w", pady=(2, 0))
-
         # ── Downloads ─────────────────────────────────────────────────
         _section("🔽 הורדות")
         _spin("מספר הורדות מקביליות:", "max_concurrent", 1, 16)
@@ -2918,7 +2850,8 @@ class SettingsDialog(tk.Toplevel):
         _check("אזהרה על כפילות URL", "warn_duplicates")
         _spin("גודל קובץ מקסימלי (MB, 0=ללא):", "max_file_size_mb", 0, 100000)
 
-        _section("🧲 טורנטים") if LIBTORRENT_OK else "✗ לא מותקן — הרץ: pip install libtorrent"
+        _section("🧲 טורנטים")
+        torrent_status = "✓ libtorrent מותקן" if LIBTORRENT_OK else "✗ לא מותקן — הרץ: pip install libtorrent"
         torrent_color  = T.GREEN if LIBTORRENT_OK else T.RED
         tk.Label(body, text=torrent_status, bg=T.BG_DEEP, fg=torrent_color,
                  font=("Consolas",9), padx=24).pack(anchor="w", pady=(0,4))
@@ -4978,7 +4911,7 @@ class FetchProApp(tk.Tk):
                  font=("Segoe UI Emoji", 36)).pack()
         tk.Label(icon_row, text="FETCHPRO", bg=T.BG_DEEP, fg=T.TEXT_MAIN,
                  font=("Consolas", 20, "bold")).pack()
-        tk.Label(icon_row, text="v5.3 — מנהל הורדות מקצועי", bg=T.BG_DEEP, fg=T.TEXT_DIM,
+        tk.Label(icon_row, text="v5.5 — מנהל הורדות מקצועי", bg=T.BG_DEEP, fg=T.TEXT_DIM,
                  font=("Consolas", 9)).pack()
 
         tk.Frame(win, bg=T.BORDER, height=1).pack(fill="x", padx=20)
