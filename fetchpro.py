@@ -2811,8 +2811,10 @@ class SettingsDialog(tk.Toplevel):
                      font=("Consolas",10), width=32, anchor="w").pack(side="left")
             v = tk.IntVar(value=getattr(self._s, key))
             self._vars[key] = v
-            tk.Spinbox(row, from_=lo, to=hi, textvariable=v, width=6,
-                       bg=T.BG_CARD, fg=T.TEXT_MAIN, font=("Consolas",10)).pack(side="left")
+            sb = tk.Spinbox(row, from_=lo, to=hi, textvariable=v, width=6,
+                            bg=T.BG_CARD, fg=T.TEXT_MAIN, font=("Consolas",10))
+            sb.pack(side="left")
+            _attach_ctx_menu(sb)
 
         def _combo(label: str, key: str, values: list[str]) -> None:
             row = tk.Frame(body, bg=T.BG_DEEP)
@@ -2822,6 +2824,50 @@ class SettingsDialog(tk.Toplevel):
             v = tk.StringVar(value=getattr(self._s, key))
             self._vars[key] = v
             ttk.Combobox(row, textvariable=v, values=values, width=12, state="readonly").pack(side="left")
+
+        def _attach_ctx_menu(widget: tk.Widget) -> None:
+            """Attach a right-click Cut/Copy/Paste/Select-All menu to any Entry or Spinbox."""
+            menu = tk.Menu(widget, tearoff=0,
+                           bg=T.BG_CARD, fg=T.TEXT_MAIN,
+                           activebackground=T.BG_HOVER, activeforeground=T.ACCENT,
+                           font=("Consolas", 9), bd=0, relief="flat")
+
+            def _cut():
+                try:
+                    widget.event_generate("<<Cut>>")
+                except Exception:
+                    pass
+
+            def _copy():
+                try:
+                    widget.event_generate("<<Copy>>")
+                except Exception:
+                    pass
+
+            def _paste():
+                try:
+                    widget.event_generate("<<Paste>>")
+                except Exception:
+                    pass
+
+            def _select_all():
+                try:
+                    widget.select_range(0, "end")
+                    widget.icursor("end")
+                except Exception:
+                    pass
+
+            menu.add_command(label="גזור",         command=_cut)
+            menu.add_command(label="העתק",         command=_copy)
+            menu.add_command(label="הדבק",         command=_paste)
+            menu.add_separator()
+            menu.add_command(label="בחר הכל",      command=_select_all)
+
+            def _show(event: tk.Event) -> None:
+                widget.focus_set()
+                menu.tk_popup(event.x_root, event.y_root)
+
+            widget.bind("<Button-3>", _show)
 
         # ── Content ──
 
@@ -2876,6 +2922,7 @@ class SettingsDialog(tk.Toplevel):
                             insertbackground=T.ACCENT, font=("Consolas",9),
                             relief="flat", width=44, show="*")
         vt_entry.pack(side="left")
+        _attach_ctx_menu(vt_entry)
         vt_var.trace_add("write",
                          lambda *_: setattr(self._s, "virustotal_api_key", vt_var.get()))
         show_vt = tk.BooleanVar(value=False)
@@ -2939,6 +2986,7 @@ class SettingsDialog(tk.Toplevel):
                          insertbackground=T.ACCENT, font=("Consolas",9),
                          relief="flat", width=width)
             e.pack(side="left")
+            _attach_ctx_menu(e)
             def _update(*_, a=attr, v=var):
                 val = v.get()
                 try:
@@ -3001,15 +3049,19 @@ class SettingsDialog(tk.Toplevel):
         tk.Label(sched_row, text=_t("sched_from"), bg=T.BG_DEEP, fg=T.TEXT_DIM,
                  font=("Consolas",9)).pack(side="left")
         sr_start = tk.StringVar(value=self._s.schedule_range_start)
-        tk.Entry(sched_row, textvariable=sr_start, width=6,
-                 bg=T.BG_CARD, fg=T.TEXT_MAIN, font=("Consolas",9),
-                 relief="flat").pack(side="left", padx=(4,12))
+        _e_start = tk.Entry(sched_row, textvariable=sr_start, width=6,
+                            bg=T.BG_CARD, fg=T.TEXT_MAIN, font=("Consolas",9),
+                            relief="flat")
+        _e_start.pack(side="left", padx=(4,12))
+        _attach_ctx_menu(_e_start)
         tk.Label(sched_row, text=_t("sched_to"), bg=T.BG_DEEP, fg=T.TEXT_DIM,
                  font=("Consolas",9)).pack(side="left")
         sr_end = tk.StringVar(value=self._s.schedule_range_end)
-        tk.Entry(sched_row, textvariable=sr_end, width=6,
-                 bg=T.BG_CARD, fg=T.TEXT_MAIN, font=("Consolas",9),
-                 relief="flat").pack(side="left", padx=4)
+        _e_end = tk.Entry(sched_row, textvariable=sr_end, width=6,
+                          bg=T.BG_CARD, fg=T.TEXT_MAIN, font=("Consolas",9),
+                          relief="flat")
+        _e_end.pack(side="left", padx=4)
+        _attach_ctx_menu(_e_end)
         tk.Label(sched_row, text="(HH:MM)", bg=T.BG_DEEP, fg=T.TEXT_MUTED,
                  font=("Consolas",8)).pack(side="left", padx=4)
         def _save_sched_range(*_):
