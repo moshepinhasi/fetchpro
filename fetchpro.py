@@ -58,25 +58,25 @@ try:
     import pystray
     from PIL import Image as PilImage
     TRAY_OK = True
-except Exception:
+except (ImportError, ModuleNotFoundError):
     TRAY_OK = False
 
 try:
     from plyer import notification as plyer_notif
     PLYER_OK = True
-except Exception:
+except (ImportError, ModuleNotFoundError):
     PLYER_OK = False
 
 try:
     import yt_dlp
     YTDLP_OK = True
-except Exception:
+except (ImportError, ModuleNotFoundError):
     YTDLP_OK = False
 
 try:
     import libtorrent as lt
     LIBTORRENT_OK = True
-except Exception:
+except (ImportError, ModuleNotFoundError):
     lt = None          # type: ignore[assignment]
     LIBTORRENT_OK = False
 
@@ -105,7 +105,7 @@ def _setup_file_log() -> None:
         fh.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
         logging.getLogger().addHandler(fh)
         logging.getLogger().setLevel(logging.DEBUG)
-    except Exception:
+    except (OSError, PermissionError):
         pass
 
 # ---------------------------------------------------------------------------
@@ -540,8 +540,12 @@ PRIORITY_COLOR: dict[Priority, str] = {
 _ILLEGAL_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 
 def _sanitize_filename(name: str) -> str:
-    """Remove illegal filesystem characters and trim whitespace."""
+    """Remove illegal filesystem characters, prevent path traversal, and trim whitespace."""
+    # Strip any directory separators to prevent path traversal attacks
+    name = os.path.basename(name)
     name = _ILLEGAL_CHARS.sub("_", name).strip(". ")
+    # Remove any remaining path traversal patterns
+    name = name.replace("..", "_")
     return name or "download"
 
 # ---------------------------------------------------------------------------
@@ -606,7 +610,7 @@ class Settings:
             data = json.loads(SETTINGS_FILE.read_text())
             valid = {f for f in cls.__dataclass_fields__}
             return cls(**{k: v for k, v in data.items() if k in valid})
-        except Exception:
+        except (OSError, json.JSONDecodeError, TypeError, ValueError):
             return cls()
 
     def save(self) -> None:
@@ -3798,7 +3802,11 @@ class _RestHandler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(payload)
 
     def _cors(self) -> None:
-        self.send_header("Access-Control-Allow-Origin",  "*")
+        origin = self.headers.get("Origin", "")
+        # Only allow requests from localhost origins (prevents CSRF from remote sites)
+        allowed = origin if (origin.startswith("http://localhost") or
+                             origin.startswith("http://127.0.0.1")) else "http://127.0.0.1"
+        self.send_header("Access-Control-Allow-Origin",  allowed)
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
 
@@ -5588,7 +5596,15 @@ class _BridgeHandler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(payload)
 
     def _cors(self) -> None:
-        self.send_header("Access-Control-Allow-Origin",  "*")
+        origin = self.headers.get("Origin", "")
+        # Allow localhost and Chrome extension origins only
+        if (origin.startswith("http://localhost") or
+                origin.startswith("http://127.0.0.1") or
+                origin.startswith("chrome-extension://")):
+            allowed = origin
+        else:
+            allowed = "http://127.0.0.1"
+        self.send_header("Access-Control-Allow-Origin",  allowed)
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
 
