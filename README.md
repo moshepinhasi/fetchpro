@@ -77,19 +77,48 @@ Tired of slow downloads and unreliable managers? **FetchPro** is the ultimate do
 - **Python:** 3.8 or higher
 - **RAM:** 512 MB minimum (1 GB recommended)
 - **Disk:** 100 MB for installation
+- **FFmpeg:** Required for audio conversion & format conversion (see installation)
 
 ---
 
 ## 🚀 Installation
 
-### Basic Setup
+### Step 1: Install FFmpeg (REQUIRED for full functionality)
 
+**Windows:**
+```bash
+# Using Chocolatey
+choco install ffmpeg
+
+# Or using Scoop
+scoop install ffmpeg
+```
+
+**macOS:**
+```bash
+# Using Homebrew
+brew install ffmpeg
+```
+
+**Linux (Ubuntu/Debian):**
+```bash
+sudo apt-get update
+sudo apt-get install ffmpeg
+```
+
+**Linux (Fedora/RHEL):**
+```bash
+sudo dnf install ffmpeg
+```
+
+### Step 2: Install Python Dependencies
+
+**Basic Setup:**
 ```bash
 pip install requests
 ```
 
-### Full Features (Recommended)
-
+**Full Features (Recommended):**
 ```bash
 pip install pystray pillow plyer yt-dlp libtorrent
 ```
@@ -98,8 +127,16 @@ pip install pystray pillow plyer yt-dlp libtorrent
 |---------|---------|
 | `pystray pillow` | System tray icon |
 | `plyer` | Native notifications |
-| `yt-dlp` | YouTube downloads |
+| `yt-dlp` | YouTube & media downloads |
 | `libtorrent` | BitTorrent support |
+| `ffmpeg` | Audio/format conversion |
+
+### Step 3: Verify Installation
+
+```bash
+ffmpeg -version
+python fetchpro.py
+```
 
 ---
 
@@ -155,13 +192,48 @@ Data stored in `~/.fetchpro/`:
 
 ## 🔌 Chrome Extension
 
+### Features
+🎥 **Download Button on Every Video**
+- The extension adds a download button directly next to every video on YouTube, Twitch, Instagram, and other video platforms
+- Click the button and choose your preferred format (MP4, WebM, MP3, M4A, WAV, etc.)
+- Supports multiple quality options for video downloads
+- One-click audio extraction (MP3, M4A, WAV, OPUS, VORBIS)
+
+### Supported Formats
+**Video Formats:**
+- MP4 (H.264)
+- WebM (VP9)
+- FLV
+- 3GP
+
+**Audio Formats:**
+- MP3 (MPEG Audio)
+- M4A (AAC)
+- WAV (PCM)
+- OPUS
+- VORBIS
+
 ### Installation
-1. Download `FetchPro-Extension-v1.3.zip`
+1. Download `FetchPro-Extension-v1.3.zip` from the repository
 2. Extract to a folder
 3. Open Chrome → `chrome://extensions/`
-4. Enable **Developer Mode**
-5. Click **Load unpacked** → select the folder
+4. Enable **Developer Mode** (top-right corner)
+5. Click **Load unpacked** → select the extracted folder
 6. Done! 🎉
+
+### How to Use
+1. Browse to any video platform (YouTube, Twitch, Instagram, etc.)
+2. Look for the **FetchPro download button** next to the video player
+3. Click the button to see available formats
+4. Select your preferred:
+   - **Video quality** (360p, 720p, 1080p, etc.)
+   - **Format** (MP4, WebM, MP3, etc.)
+5. Download starts automatically in FetchPro!
+
+### Troubleshooting
+- **Button not appearing?** Make sure FetchPro desktop app is running (extension communicates via REST API)
+- **Wrong format selected?** Make sure FFmpeg is installed for proper conversion
+- **Download not starting?** Verify FetchPro is running and REST API is accessible on `http://127.0.0.1:9099`
 
 ---
 
@@ -175,6 +247,15 @@ A: Install it: `pip install yt-dlp` or update: `pip install --upgrade yt-dlp`
 
 **Q: Can't access REST API?**  
 A: Ensure FetchPro is running. The API only listens on localhost for security.
+
+**Q: FFmpeg not found?**  
+A: Make sure FFmpeg is installed on your system and added to PATH. Run `ffmpeg -version` to verify.
+
+**Q: Chrome Extension button not showing?**  
+A: Ensure FetchPro desktop app is running on the same machine. The extension communicates via local REST API.
+
+**Q: Video conversion is slow**  
+A: FFmpeg conversion speed depends on your CPU. Higher quality or longer videos take more time to convert.
 
 ---
 
